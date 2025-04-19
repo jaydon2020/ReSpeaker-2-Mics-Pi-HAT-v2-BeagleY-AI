@@ -1,0 +1,128 @@
+// reSpeaker Audio driver for TLV320AIC3104 for BeagleY-AI 
+// SPDX-License-Identifier: GPL-2.0
+/* 
+ * Copyright (C) 2022 Texas Instruments Incorporated - https://www.ti.com/
+ * Modified by Jian De
+ */
+
+/dts-v1/;
+/plugin/;
+
+#include <dt-bindings/gpio/gpio.h>
+#include "ti/k3-pinctrl.h"
+
+
+/*
+ * Helper to show loaded overlays under: /proc/device-tree/chosen/overlays/
+ */
+&{/chosen} {
+	overlays {
+		k3-am67a-beagley-ai-reSpeaker.kernel = __TIMESTAMP__;
+	};
+};
+
+&{/} {
+	tlv320aic3104_mclk: tlv320aic3104_mclk {
+		#clock-cells = <0>;
+		compatible = "fixed-clock";
+		clock-frequency = <12288000>;
+	};
+
+	sound1 {
+		compatible = "simple-audio-card";
+		simple-audio-card,format = "i2s";
+		simple-audio-card,name = "seeed2micvoicec";
+		simple-audio-card,bitclock-master = <&dailink0_master>;
+		simple-audio-card,frame-master = <&dailink0_master>;
+		status = "okay";
+
+		simple-audio-card,widgets =
+			"Headphone", "Headphone Jack",
+			"Line", "Line In";
+		simple-audio-card,routing =
+			"Headphone Jack",       "HPLOUT",
+			"Headphone Jack",       "HPROUT",
+			"LINE1L",               "Line In",	
+			"LINE1R",               "Line In";
+
+		dailink0_master: simple-audio-card,cpu {
+			sound-dai = <&mcasp0>;
+			system-clock-direction-out;
+		};
+		simple-audio-card,codec {
+			sound-dai = <&tlv320aic3104>;
+			clocks = <&tlv320aic3104_mclk>;
+			clock-names = "mclk";
+		};
+	};
+	
+	vdd_audio_1v8: regulator-audio {
+		compatible = "regulator-fixed";
+		regulator-name = "vdd_audio_1v8";
+		regulator-min-microvolt = <1800000>;
+		regulator-max-microvolt = <1800000>;
+		vin-supply = <&vdd_3v3>;
+		regulator-always-on;
+		regulator-boot-on;
+	};
+};
+
+&main_pmx0 {
+    // I2S running on MCASP0 (MCASP1 is HDMI audio).
+	main_mcasp0_pins_default: main-mcasp0-codec-default-pins {
+		pinctrl-single,pins = <
+			J722S_IOPAD(0x01a4, PIN_INPUT, 0) /* BCLK on hat-12 (D25) MCASP0_ACLKX */
+			J722S_IOPAD(0x01a8, PIN_INPUT, 0) /* WCLK on hat-35 (C26) MCASP0_AFSX */
+			J722S_IOPAD(0x01a0, PIN_INPUT, 0) /* DIN  on hat-38 (F24) MCASP0_AXR0  (may be F23, as per beagley_ai-pinmux.dts)*/
+			J722S_IOPAD(0x019c, PIN_OUTPUT, 0)/* DOUT on hat-40 (B25) MCASP0_AXR1 */
+		>;
+	};
+
+};
+
+
+
+&mcu_i2c0 {
+	#address-cells = <1>;
+	#size-cells = <0>;
+	status = "okay";
+
+	tlv320aic3104: tlv320aic3104@18 {
+		#sound-dai-cells = <0>;
+		compatible = "ti,tlv320aic3104";
+		clocks = <&tlv320aic3104_mclk>;
+		clock-names = "mclk";
+		reg = <0x18>;                       // I2C address 0x18, matches @18 of this section.
+		ai3x-micbias-vg = <2>; // set MICBIAS to 2.5v
+		AVDD-supply = <&vdd_3v3>;
+		IOVDD-supply = <&vdd_3v3>;
+		DRVDD-supply = <&vdd_3v3>;
+		DVDD-supply = <&vdd_audio_1v8>;
+		status = "okay";
+	};
+};
+ 
+&mcasp0 {
+	status = "okay";
+
+	#sound-dai-cells = <0>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&main_mcasp0_pins_default>;
+	auxclk-fs-ratio = <256>;
+	op-mode = <0>;          /* MCASP_IIS_MODE */
+	tdm-slots = <2>;
+
+	serial-dir = <  /* 0: INACTIVE, 1: TX, 2: RX */
+	       2 1 0 0
+	       0 0 0 0
+	       0 0 0 0
+	       0 0 0 0
+	>;
+
+	tx-num-evt = <0>;
+	rx-num-evt = <0>;
+};
+
+
+
+
