@@ -3,7 +3,7 @@ import numpy as np
 import soundfile
 
 device_index = 1
-input_rate = 48000
+input_rate = 44100
 seconds_per_run = 5
 
 p = pyaudio.PyAudio()

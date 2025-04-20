@@ -1,7 +1,6 @@
 // reSpeaker Audio driver for TLV320AIC3104 for BeagleY-AI 
 // SPDX-License-Identifier: GPL-2.0
 /* 
- * Copyright (C) 2022 Texas Instruments Incorporated - https://www.ti.com/
  * Modified by Jian De
  */
 
