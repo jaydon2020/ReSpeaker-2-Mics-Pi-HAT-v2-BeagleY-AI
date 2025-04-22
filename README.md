@@ -3,26 +3,25 @@
 
 ## **Hardware Overview**  
 
-1. **BeagleY-AI**:  
+### 1. **BeagleY-AI**:  
 
-  ![BeagleY-AI](https://www.beagleboard.org/app/uploads/2024/06/BeagleY-AI-angled-front-1-400x267-1-300x200.png)
+![BeagleY-AI](https://docs.beagleboard.org/_images/beagley-ai.webp)
+
+BeagleY® AI is an open-source single board computer designed to simplify the process of building smart human machine interfaces (HMI), adding cameras and high-speed connectivity to a reliable embedded system. It features a powerful 64-bit, quad-core A53 processor, multiple powerful AI accelerators paired with C7x DSPs, integrated 50 GFLOP GPU supporting up to three concurrent display outputs and modern connectivity including USB3.1, PCIe Gen 3, WiFi6 and Bluetooth® Low Energy 5.4. 
+
+The board is compatible with a wide range of existing accessories that expand the system functionality such as power over ethernet (PoE), NVMe storage and 5G connectivity.
+
+With its competitive price and user-friendly design, Beagle Y AI provides a positive development experience using BeagleBoard's tried and tested custom Debian Linux image.
 
 
-
-2. **ReSpeaker 2-Mics Pi HAT v2**:  
-  ---
-  **NOTE**
-
-  The reSpeaker 2-Mics Pi HAT has been upgraded to version 2.0. The codec chip has been replaced from WM8960 to TLV320AIC3104, enabling support for Raspberry Pi 5 and expanding the sampling rate range from 8 kHz to 96 kHz.
-
-  ---
+### 2. **ReSpeaker 2-Mics Pi HAT v2**:  
 
 > [!NOTE]
 > The reSpeaker 2-Mics Pi HAT has been upgraded to version 2.0. The codec chip has been replaced from WM8960 to TLV320AIC3104, enabling support for Raspberry Pi 5 and expanding the sampling rate range from 8 kHz to 96 kHz.
 
-  ![ReSpeaker](https://media-cdn.seeedstudio.com/media/catalog/product/cache/bb49d3ec4ee05b6f018e93f896b8a25d/0/6/06_1.png)
+![ReSpeaker](https://media-cdn.seeedstudio.com/media/catalog/product/cache/bb49d3ec4ee05b6f018e93f896b8a25d/0/6/06_1.png)
 
-  ReSpeaker 2-Mics Pi HAT is a dual-microphone expansion board for Raspberry Pi designed for AI and voice applications. You can build a more powerful and flexible voice product that integrates Amazon Alexa Voice Service, Google Assistant, and so on.
+ReSpeaker 2-Mics Pi HAT is a dual-microphone expansion board for Raspberry Pi designed for AI and voice applications. You can build a more powerful and flexible voice product that integrates Amazon Alexa Voice Service, Google Assistant, and so on.
 
 ## **Porting Process**  
 ### **1. Bootable SD Card Preparation**  
