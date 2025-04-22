@@ -2,6 +2,9 @@
 
 REVISED APRIL 2025
 
+> [!WARNING]
+> This wiki is wrote for ReSpeaker 2-Mics Pi HAT v2, to distinguish the v1 and v2 device, please refer to [How to Distinguish ReSpeaker 2-Mics Pi HAT Hardware Revisions](https://wiki.seeedstudio.com/how-to-distinguish-respeaker_2-mics_pi_hat-hardware-revisions/).
+
 ## **Hardware Overview**  
 
 ### 1. **BeagleY-AI**  
