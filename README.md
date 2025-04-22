@@ -1,187 +1,173 @@
 # **Porting ReSpeaker 2-Mics Pi HAT v2 to BeagleY-AI**
 
+REVISED APRIL 2025
 
 ## **Hardware Overview**  
 
-### 1. **BeagleY-AI**:  
+### 1. **BeagleY-AI**  
 
 ![BeagleY-AI](https://docs.beagleboard.org/_images/beagley-ai.webp)
 
-BeagleY® AI is an open-source single board computer designed to simplify the process of building smart human machine interfaces (HMI), adding cameras and high-speed connectivity to a reliable embedded system. It features a powerful 64-bit, quad-core A53 processor, multiple powerful AI accelerators paired with C7x DSPs, integrated 50 GFLOP GPU supporting up to three concurrent display outputs and modern connectivity including USB3.1, PCIe Gen 3, WiFi6 and Bluetooth® Low Energy 5.4. 
+BeagleY® AI is an open-source single board computer designed to simplify the process of building smart human machine interfaces (HMI), adding cameras and high-speed connectivity to a reliable embedded system. It features a powerful 64-bit, quad-core A53 processor, multiple powerful AI accelerators paired with C7x DSPs, integrated 50 GFLOP GPU supporting up to three concurrent display outputs and modern connectivity including USB3.1, PCIe Gen 3, WiFi6 and Bluetooth® Low Energy 5.4.
 
 The board is compatible with a wide range of existing accessories that expand the system functionality such as power over ethernet (PoE), NVMe storage and 5G connectivity.
 
 With its competitive price and user-friendly design, Beagle Y AI provides a positive development experience using BeagleBoard's tried and tested custom Debian Linux image.
 
-
-### 2. **ReSpeaker 2-Mics Pi HAT v2**:  
+### 2. **ReSpeaker 2-Mics Pi HAT v2**
 
 > [!NOTE]
 > The reSpeaker 2-Mics Pi HAT has been upgraded to version 2.0. The codec chip has been replaced from WM8960 to TLV320AIC3104, enabling support for Raspberry Pi 5 and expanding the sampling rate range from 8 kHz to 96 kHz.
 
-![ReSpeaker](https://media-cdn.seeedstudio.com/media/catalog/product/cache/bb49d3ec4ee05b6f018e93f896b8a25d/0/6/06_1.png)
+![ReSpeaker](https://media-cdn.seeedstudio.com/media/catalog/product/cache/bb49d3ec4ee05b6f018e93f896b8a25d/0/4/04_8_1.png)
 
 ReSpeaker 2-Mics Pi HAT is a dual-microphone expansion board for Raspberry Pi designed for AI and voice applications. You can build a more powerful and flexible voice product that integrates Amazon Alexa Voice Service, Google Assistant, and so on.
 
-## **Porting Process**  
-### **1. Bootable SD Card Preparation**  
-- **Image**: `BeagleY-AI Debian 12.9 2025-03-05 XFCE (v6.6.x-ti)`  
-- **Flashing**:  
-  ```bash  
-  sudo balena-etcher-cli --drive /dev/mmcblk0 beagley-ai-debian-12.9.img  
-  ```  
+## **Setup Process**
 
-### **2. Kernel Driver Compilation**  
-**Why Cross-Compile?**  
-BeagleY-AI’s RISC-V architecture requires ARM64 kernel modules for compatibility with TI’s McASP driver.  
+### **1. Bootable SD Card Preparation**
 
-**Steps**:  
-1. Clone the kernel:  
-   ```bash  
-   git clone --depth=1 -b v6.6.58-ti-arm64-r23 https://github.com/beagleboard/linux  
-   ```  
-2. Configure for TLV320AIC31xx:  
-   ```bash  
-   make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- menuconfig  
-   # Enable: Device Drivers → Sound → SOC → TI → TLV320AIC31xx (Module)  
-   ```  
-3. Compile and deploy:  
-   ```bash  
-   make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- Image dtbs modules -j$(nproc)  
-   sudo cp -r modules/lib/modules/$(make kernelversion)/ /media/user/rootfs/lib/modules/  
-   ```  
+> [!NOTE]
+> Tested with [BeagleY-AI Debian 12.9 2025-03-05 XFCE (v6.6.x-ti)](https://www.beagleboard.org/distros/beagley-ai-debian-12-9-2025-03-05-xfce-v6-6-x-ti).
 
----
+Create a bootable microSD card with latest/recommended OS image for BeagleY-AI. [BeagleY-AI Quick Start](https://docs.beagleboard.org/boards/beagley/ai/02-quick-start.html)
+
+### **2. Kernel Driver Compilation**
+
+> [!NOTE]
+> If snd-soc-tlv320aic31xx.ko.xz file not exists, follow this step to build form the source code. If the file exists skip step 3 direct navigate “Load device tree”.
+
+```bash
+$ cd linux
+
+# default configuration
+$ make distclean
+$ make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- bb.org_defconfig
+
+# config camera
+$ make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- menuconfig
+# -> Device Drivers
+#   -> Sound card support
+#     -> Advance Linux Sound Architecture
+#       -> ALSA for SoC audio support
+#         -> CODEC drivers
+#             -> Texas Instruments TLV320AIC31xx CODECs
+#                Set "TLV320AIC31xx" to module,
+#                Press "m", save to original name (.config) and exit
+
+$ make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- Image dtbs modules LOCALVERSION="-ti-arm64-r23" -j$(nproc)
+```
+
+Plug in the SD card which burned in” Create a bootable microSD card” to PC.
+
+**Install onto the SD card**:
+
+```bash
+$ sudo cp arch/arm64/boot/Image /media/$(users)/BOOT/
+$ sudo cp arch/arm64/boot/dts/ti/*.dtbo /media/$(users)/BOOT/overlays/
+# you can use "make kernelversion" to check kernel version
+$ sudo cp -ra modules/lib/modules/$(make kernelversion)-ti-arm64-r23/ /media/$(users)/rootfs/lib/modules/
+$ sync
+```
+
+Boot BeagleY-AI with SD card.
 
 ## **Device Tree Configuration**  
-### **Critical Overlay: `k3-am67a-beagley-ai-respeaker.dtbo`**  
-**Key Sections**:  
-1. **McASP0 Pin Muxing**:  
-   ```dts  
-   J722S_IOPAD(0x01a4, PIN_INPUT, 0)  /* BCLK → HAT Pin 12 */  
-   J722S_IOPAD(0x01a8, PIN_INPUT, 0)  /* WCLK → HAT Pin 35 */  
-   J722S_IOPAD(0x01a0, PIN_INPUT, 0)  /* DIN → HAT Pin 38 */  
-   J722S_IOPAD(0x019c, PIN_OUTPUT, 0) /* DOUT → HAT Pin 40 */  
-   ```  
-2. **TLV320AIC3104 I2C Setup**:  
-   ```dts  
-   &mcu_i2c0 {  
-     tlv320aic3104@18 {  
-       reg = <0x18>;  
-       clocks = <&tlv320aic3104_mclk>;  
-       ai3x-micbias-vg = <2>; // 2.5V for electret mics  
-     };  
-   };  
-   ```  
-3. **McASP FIFO Configuration**:  
-   ```dts  
-   &mcasp0 {  
-     tx-num-evt = <32>; // TX FIFO depth (prevents underflow)  
-     rx-num-evt = <32>; // RX FIFO depth  
-   };  
-   ```  
 
-**Deployment**:  
-```bash  
-sudo fdtoverlay -i /boot/firmware/ti/k3-am67a-beagley-ai.dtb -o /boot/firmware/ti/k3-am67a-beagley-ai.dtb /boot/firmware/overlays/k3-am67a-beagley-ai-respeaker.dtbo  
-```  
+**Get compiled Device Tree Source (DTS)**:
 
----
+```bash
+# Download the compiled Device Tree Source (DTS) 
+$ curl https://raw.githubusercontent.com/jaydon2020/ReSpeaker-2-Mics-Pi-HAT-v2-BeagleY-AI/refs/heads/main/overlays/k3-am67a-beagley-ai-respeaker.dtbo -o k3-am67a-beagley-ai-respeaker.dtbo
 
-## **Audio Pipeline Validation**  
-### **1. ALSA Hardware Testing**  
-- **List Devices**:  
-  ```bash  
-  arecord -l  # Should show "seeed2micvoicec" as card 0  
-  ```  
-- **Record/Playback**:  
-  ```bash  
-  arecord -D plughw:0,0 -f S16_LE -r 16000 -c 1 -d 5 test.wav  
-  aplay -D hw:0,0 test.wav  
-  ```  
+# Move the .dtbo file to /boot/firmware/overlays/
+$ mv k3-am67a-beagley-ai-respeaker.dtbo /boot/firmware/overlays/
+```
 
-### **2. McASP Clock Verification**  
-- **Expected Signals**:  
-  - **BCLK**: 1.536 MHz (for 48 kHz, 32-bit frames).  
-  - **MCLK**: 12.288 MHz (256 × 48 kHz).  
-- **Debugging**:  
-  ```bash  
-  dmesg | grep mcasp  # Check for "McASP0 configured as I2S Master"  
-  ```  
+**Load Device Tree Configuration**:  
+Add the overlay to label microSD (default) and append fdtoverlays `/overlays/k3-am67a-beagley-ai-respeaker.dtbo` after the fdt line.
+To use the LEDs, you need enable SPI interface first. To enable SPI interface, open the BeagleY-AI `/boot/firmware/extlinux/extlinux.conf`
 
----
+```bash
+$ sudo nano /boot/firmware/extlinux/extlinux.conf
 
-## **Advanced: Keyword Spotting Demo**  
-### **1. Setup EdgeAI-KWS**  
-```bash  
-git clone https://github.com/TexasInstruments/edgeai-keyword-spotting  
-python3 -m venv kws-env && source kws-env/bin/activate  
-pip install tflite-runtime librosa numpy  
-```  
+> label microSD (default)
+>    kernel /Image
+>    append console=ttyS2,115200n8 root=/dev/mmcblk1p3 ro rootfstype=ext4 resume=/dev/mmcblk1p2 rootwait net.ifnames=0 quiet
+>    fdtdir /
+>    fdt /ti/k3-am67a-beagley-ai.dtb
+>    fdtoverlays /overlays/k3-am67a-beagley-ai-respeaker.dtbo /overlays/k3-am67a-beagley-ai-spidev0.dtbo
+>    initrd /initrd.img
+```
 
-### **2. Offload Inference to MMA**  
-- **Model Compilation**:  
-  ```bash  
-  ./edgeai-tidl-tools --compile -m model.tflite -c ./tidl_config  
-  ```  
-- **Run Inference**:  
-  ```python  
-  from tflite_runtime.interpreter import load_delegate  
-  interpreter = tf.lite.Interpreter(  
-      model_path='model.tflite',  
-      experimental_delegates=[load_delegate('libtidl_tfl_delegate.so')]  
-  )  
-  ```  
+**Restart**:
 
-**Expected Performance**:  
-- **Preprocessing**: 5 ms (C7x DSP offload).  
-- **Inference**: 2 ms (MMA).  
+```bash
+sudo reboot -f
+```
 
----
+## **Basic Recording & Playback**
 
-## **Troubleshooting**  
-### **1. "Input/Output Error" During Recording**  
-**Cause**: McASP FIFO underflow.  
-**Fix**:  
-```dts  
-// In mcasp0 node:  
-tx-num-evt = <32>;  
-rx-num-evt = <32>;  
-```  
+Use `aplay -l` to list the playback device and `arecord -l` to list the recording device.
 
-### **2. Silent Playback**  
-**Diagnosis**:  
-```bash  
-alsamixer  # Ensure "Headphone" and "PGA" are unmuted  
-```  
-**Fix**:  
-```dts  
-// In sound1 node:  
-simple-audio-card,routing = "Headphone Jack", "HPLOUT";  
-```  
+**Record mono audio (16-bit, 16kHz)**:
 
-### **3. I2C Communication Failure**  
-**Debug**:  
-```bash  
-i2cdetect -y 0  # Check for device 0x18  
-```  
+```bash
+arecord -D plughw:0,0 --format S16_LE --rate 16000 --channels 1 --duration 5 test_mono.wav
+```
 
----
+> [!NOTE]
+> Why plughw?The ReSpeaker HAT's hardware `(hw:0,0)` natively supports stereo input only.plughw automatically converts the stereo stream to mono by averaging channels.
 
-## **Conclusion**  
-This port bridges ReSpeaker’s audio capabilities with BeagleY-AI’s computational power, enabling edge-native voice AI. Future enhancements could leverage the MMA for speaker diarization or integrate beamforming using McASP’s TDM mode. Share your device tree overlays and benchmarks with the [BeagleY-AI community](https://forum.beagleboard.org/)!  
+**Record stereo audio (16-bit, 48kHz)**:
 
----
+```bash
+arecord -D hw:0,0 --format S16_LE --rate 48000 --channels 2 --duration 5 test_stereo.wav  
+```
 
-## **References**  
-1. BeagleBoard.org, *BeagleY-AI Documentation*, 2025. [Online]. Available: [https://docs.beagleboard.org](https://docs.beagleboard.org)  
-2. Texas Instruments, *TLV320AIC3104 Data Sheet (Rev. G)*, 2021. [PDF]. [https://www.ti.com/lit/ds/symlink/tlv320aic3104.pdf](https://www.ti.com/lit/ds/symlink/tlv320aic3104.pdf)  
-3. Seeed Studio, *ReSpeaker 2-Mics Pi HAT v2 Wiki*, 2023. [Online]. Available: [https://wiki.seeedstudio.com](https://wiki.seeedstudio.com)  
+**Playback recorded audio**:
 
----
+```bash
+aplay -D hw:0,0 test_mono.wav
+```
 
-**Appendices**:  
-- **Pinout Diagram**: [BeagleY-AI McASP Mapping](https://pinout.beagley.ai)  
-- **Sample Code**: [GitHub Repository](https://github.com/jaydon2020/ReSpeaker-2-Mics-Pi-HAT-v2-BeagleY-AI)  
+**Record Sound with Python**:
 
-Let me know if you'd like to expand specific sections (e.g., McASP clock tree deep dive)! 🎤
+```bash
+git clone https://github.com/jaydon2020/ReSpeaker-2-Mics-Pi-HAT-v2-BeagleY-AI.git 
+cd mic_hat
+
+sudo apt-get install portaudio19-dev libatlas-base-dev
+```
+
+We use PyAudio python library to record sound with Python.First, run the following script to get the device index number of ReSpeaker
+
+```bash
+python3 recordings/detect_microphone.py
+```
+
+To record the sound, open `recording_examples/record_stero.py` file with nano, vim or other text editor and change `RESPEAKER_INDEX = 1` to index number of ReSpeaker on your system. Then run python script `record_stero.py` to make a recording:
+
+```bash
+python3 recordings/record_mono.py
+```
+
+## **On-board User LEDs and Button**
+
+Setup
+
+```bash
+sudo apt update
+sudo apt install python3-libgpiod python3-spidev
+```
+
+Run `python interfaces/pixels.py` to test the LEDs.
+Run `python interfaces/button.py` to test the button.
+
+## **Full porting process and documentation**
+
+Post on hackster [Porting the ReSpeaker 2-Mics Pi HAT v2 to BeagleY-AI](https://www.hackster.io/jaydon-msia/porting-the-respeaker-2-mics-pi-hat-v2-to-beagley-ai-6dd8f2) with an application example keyword spotting
+
+## **Refrenecs**
+1. https://www.seeedstudio.com/ReSpeaker-2-Mics-Pi-HAT.html
+2. https://docs.beagleboard.org/boards/beagley/ai/index.html
