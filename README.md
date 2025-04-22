@@ -35,7 +35,7 @@ Create a bootable microSD card with latest/recommended OS image for BeagleY-AI. 
 ### **2. Kernel Driver Compilation**
 
 > [!NOTE]
-> If snd-soc-tlv320aic31xx.ko.xz file not exists, follow this step to build form the source code. If the file exists skip step 3 direct navigate “Load device tree”.
+> If snd-soc-tlv320aic31xx.ko.xz file not exists, follow this step to build form the source code. If the file exists skip this step direct navigate “Load device tree”.
 
 ```bash
 $ cd linux
@@ -84,7 +84,8 @@ $ curl https://raw.githubusercontent.com/jaydon2020/ReSpeaker-2-Mics-Pi-HAT-v2-B
 $ mv k3-am67a-beagley-ai-respeaker.dtbo /boot/firmware/overlays/
 ```
 
-**Load Device Tree Configuration**:  
+**Load Device Tree Configuration**:
+
 Add the overlay to label microSD (default) and append fdtoverlays `/overlays/k3-am67a-beagley-ai-respeaker.dtbo` after the fdt line.
 To use the LEDs, you need enable SPI interface first. To enable SPI interface, open the BeagleY-AI `/boot/firmware/extlinux/extlinux.conf`
 
@@ -129,6 +130,7 @@ arecord -D hw:0,0 --format S16_LE --rate 48000 --channels 2 --duration 5 test_st
 
 ```bash
 aplay -D hw:0,0 test_mono.wav
+aplay -D hw:0,0 test_stereo.wav
 ```
 
 **Record Sound with Python**:
@@ -149,7 +151,7 @@ python3 recordings/detect_microphone.py
 To record the sound, open `recording_examples/record_stero.py` file with nano, vim or other text editor and change `RESPEAKER_INDEX = 1` to index number of ReSpeaker on your system. Then run python script `record_stero.py` to make a recording:
 
 ```bash
-python3 recordings/record_mono.py
+python3 recordings/record_stereo.py
 ```
 
 ## **On-board User LEDs and Button**
@@ -169,5 +171,6 @@ Run `python interfaces/button.py` to test the button.
 Post on hackster [Porting the ReSpeaker 2-Mics Pi HAT v2 to BeagleY-AI](https://www.hackster.io/jaydon-msia/porting-the-respeaker-2-mics-pi-hat-v2-to-beagley-ai-6dd8f2) with an application example keyword spotting
 
 ## **Refrenecs**
+
 1. https://www.seeedstudio.com/ReSpeaker-2-Mics-Pi-HAT.html
 2. https://docs.beagleboard.org/boards/beagley/ai/index.html
