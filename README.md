@@ -38,7 +38,7 @@ Create a bootable microSD card with latest/recommended OS image for BeagleY-AI. 
 ### **2. Kernel Driver Compilation**
 
 > [!NOTE]
-> If snd-soc-tlv320aic31xx.ko.xz file not exists, follow this step to build form the source code. If the file exists skip this step direct navigate “Load device tree”.
+> Usally the BeagleY-AI come with the driver. If snd-soc-tlv320aic31xx.ko.xz file not exists, try to update and upgrade using command `sudo apt update && sudo apt upgrade`, if the driver still not exits follow this step to build form the source code. If the file exists skip this step direct navigate “Load device tree”.
 
 ```bash
 $ cd linux
